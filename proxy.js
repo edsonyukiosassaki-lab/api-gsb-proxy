@@ -11,12 +11,18 @@ app.get("/", (req, res) => {
 
 app.use("/gsb", (req, res) => {
   const path = req.originalUrl.replace("/gsb", "");
+  
+  const headers = { "Content-Type": "application/json" };
+  if (req.headers["authorization"]) {
+    headers["Authorization"] = req.headers["authorization"];
+  }
+
   const options = {
     hostname: "api.gsbsoftware.com.br",
     port: 50013,
     path: path,
     method: req.method,
-    headers: { "Content-Type": "application/json" }
+    headers: headers
   };
 
   const proxyReq = http.request(options, (proxyRes) => {
