@@ -1,9 +1,9 @@
 {
   "name": "api-gsb-proxy",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "proxy.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node proxy.js"
   },
   "dependencies": {
     "express": "^4.18.2",
