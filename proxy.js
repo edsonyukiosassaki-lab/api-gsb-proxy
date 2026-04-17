@@ -1,42 +1,37 @@
 const express = require("express");
-const fetch = require("node-fetch");
-
+const http = require("http");
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
 
-// Health check
 app.get("/", (req, res) => {
   res.json({ status: "ok", service: "api-gsb-proxy" });
 });
 
-// Proxy GSB
-app.use("/gsb", async (req, res) => {
-  try {
-    const path = req.originalUrl.replace("/gsb/", "");
-    const targetUrl = `http://api.gsbsoftware.com.br:50013/${path}`;
+app.use("/gsb", (req, res) => {
+  const path = req.originalUrl.replace("/gsb", "");
+  const options = {
+    hostname: "api.gsbsoftware.com.br",
+    port: 50013,
+    path: path,
+    method: req.method,
+    headers: { "Content-Type": "application/json" }
+  };
 
-    const options = {
-      method: req.method,
-      headers: {
-        "Content-Type": "application/json",
-        ...(req.headers["authorization"] && {
-          "Authorization": req.headers["authorization"]
-        })
-      },
-      body: ["POST", "PUT", "PATCH"].includes(req.method)
-        ? JSON.stringify(req.body)
-        : undefined
-    };
+  const proxyReq = http.request(options, (proxyRes) => {
+    let data = "";
+    proxyRes.on("data", (chunk) => data += chunk);
+    proxyRes.on("end", () => {
+      res.status(proxyRes.statusCode).send(data);
+    });
+  });
 
-    const response = await fetch(targetUrl, options);
-    const data = await response.text();
-    res.status(response.status).send(data);
-
-  } catch (err) {
+  proxyReq.on("error", (err) => {
     res.status(500).json({ error: "Erro no proxy", details: err.message });
-  }
+  });
+
+  proxyReq.end();
 });
 
 app.listen(PORT, () => {
